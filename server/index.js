@@ -161,13 +161,13 @@ io.on("connection", (socket) => {
     room.votes[socket.id] = votedId;
     io.to(roomCode).emit("votes-update", room.votes);
 
-    if (Object.keys(room.votes).length === room.players.length) {
-      io.to(roomCode).emit("game-ended", {
-        spyId: room.spyId,
-        votes: room.votes,
-        players: room.players,
-      });
-    }
+  if (Object.keys(room.votes).length === room.players.length) {
+  io.to(roomCode).emit("game-ended", {
+    spyId: room.spyId,
+    votes: room.votes,
+    players: room.players,
+  });
+}
   });
 
   socket.on("disconnect", () => {
