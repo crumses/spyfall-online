@@ -9,7 +9,10 @@ function App() {
   const [roomCode, setRoomCode] = useState("");
   const [joinedRoom, setJoinedRoom] = useState(null);
   const [locations, setLocations] = useState(["", "", "", "", ""]);
-  const [roles, setRoles] = useState(["", "", "", "", ""]);
+  const [rolesMatrix, setRolesMatrix] = useState(
+    Array(5).fill(null).map(() => Array(5).fill(""))
+  );
+
   const [players, setPlayers] = useState([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [assignedLocation, setAssignedLocation] = useState("");
@@ -26,18 +29,13 @@ function App() {
   const [showResults, setShowResults] = useState(false);
   const [spyId, setSpyId] = useState("");
   const [myId, setMyId] = useState(null);
-
   const [currentAsker, setCurrentAsker] = useState("");
   const [currentAnswerer, setCurrentAnswerer] = useState("");
 
   useEffect(() => {
-    socket.on("connect", () => {
-      setMyId(socket.id);
-    });
+    socket.on("connect", () => setMyId(socket.id));
 
-    socket.on("update-room", (room) => {
-      setPlayers(room.players);
-    });
+    socket.on("update-room", (room) => setPlayers(room.players));
 
     socket.on("game-started", (data) => {
       const me = data.players.find(p => p.id === socket.id);
@@ -137,10 +135,17 @@ function App() {
   };
 
   const submitLocationsAndRoles = () => {
+    const flattenedRoles = rolesMatrix.flat();
+    const allFilled = locations.every(loc => loc.trim()) && flattenedRoles.every(role => role.trim());
+    if (!allFilled) {
+      alert("Tüm yer ve roller doldurulmalı!");
+      return;
+    }
+
     socket.emit("submit-locations-roles", {
       roomCode,
       locations,
-      roles,
+      roles: flattenedRoles,
     });
   };
 
@@ -241,20 +246,6 @@ function App() {
         </ul>
 
         {answerTurn && <button onClick={endTurn}>Cevabı Bitir</button>}
-
-        <h3>Girilmiş Yer ve Roller</h3>
-        <table>
-          <thead><tr><th>Oyuncu</th><th>Yerler</th><th>Roller</th></tr></thead>
-          <tbody>
-            {players.map(p => (
-              <tr key={p.id}>
-                <td>{p.username}</td>
-                <td>{p.locations.join(", ")}</td>
-                <td>{p.roles.join(", ")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     );
   }
@@ -265,34 +256,51 @@ function App() {
       <h3>Oyuncular:</h3>
       <ul>{players.map(p => <li key={p.id}>{p.username}</li>)}</ul>
 
-      <h3>Yerler</h3>
+      <h3>Yerler ve Roller</h3>
       {locations.map((loc, i) => (
-        <input
-          key={i}
-          value={loc}
-          onChange={(e) => {
-            const newLocs = [...locations];
-            newLocs[i] = e.target.value;
-            setLocations(newLocs);
-          }}
-        />
-      ))}
-
-      <h3>Roller</h3>
-      {roles.map((r, i) => (
-        <input
-          key={i}
-          value={r}
-          onChange={(e) => {
-            const newR = [...roles];
-            newR[i] = e.target.value;
-            setRoles(newR);
-          }}
-        />
+        <div key={i}>
+          <input
+            placeholder={`Yer ${i + 1}`}
+            value={loc}
+            onChange={(e) => {
+              const newLocs = [...locations];
+              newLocs[i] = e.target.value;
+              setLocations(newLocs);
+            }}
+          />
+          <div className="role-group">
+            {rolesMatrix[i].map((role, j) => (
+              <input
+                key={j}
+                placeholder={`Rol ${j + 1}`}
+                value={role}
+                onChange={(e) => {
+                  const newMatrix = [...rolesMatrix];
+                  newMatrix[i][j] = e.target.value;
+                  setRolesMatrix(newMatrix);
+                }}
+              />
+            ))}
+          </div>
+        </div>
       ))}
 
       <button onClick={submitLocationsAndRoles}>Gönder</button>
       {players[0]?.id === myId && <button onClick={startGame}>Oyunu Başlat</button>}
+
+      <h3>Girilmiş Veriler</h3>
+      <table>
+        <thead><tr><th>Oyuncu</th><th>Yerler</th><th>Roller</th></tr></thead>
+        <tbody>
+          {players.map(p => (
+            <tr key={p.id}>
+              <td>{p.username}</td>
+              <td>{p.locations.join(", ")}</td>
+              <td>{p.roles.join(", ")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
