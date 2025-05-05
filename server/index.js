@@ -1,25 +1,31 @@
-const path = require("path");
-
 const express = require("express");
+const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
 const app = express();
-
-// CORS middleware'ini önce tanımla
-app.use(cors());
-
-// Sağlık kontrolü veya test için "/" rotası
-app.get("/", (req, res) => {
-  res.send("Socket.io sunucusu çalışıyor.");
-});
-
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
 });
 
+app.use(cors());
+
+// 🔹 React build klasörünü sun
+app.use(express.static(path.join(__dirname, "../client/build")));
+
+// 🔸 API test endpoint (opsiyonel)
+app.get("/api/health", (req, res) => {
+  res.json({ message: "Server is healthy" });
+});
+
+// 🔹 Tüm bilinmeyen isteklerde React index.html döndür
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+});
+
+// 🧠 Socket.io setup
 let rooms = {};
 
 io.on("connection", (socket) => {
@@ -171,13 +177,8 @@ io.on("connection", (socket) => {
     }
   });
 });
-// React frontend'i sunmak için
-app.use(express.static(path.join(__dirname, "../client/build")));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
-});
-// Port 3001 (Render'da PORT env değişkeni kullanılmalı)
+// 🌐 PORT ayarı
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Sunucu ${PORT} portunda çalışıyor.`);
