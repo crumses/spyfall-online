@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
 
-const socket = io(); // Render'da aynı domaine bağlanır, en güvenlisi budur.
+const socket = io("http://localhost:3001");
 
 function App() {
   const [username, setUsername] = useState("");
@@ -25,16 +25,23 @@ function App() {
   const [globalTimer, setGlobalTimer] = useState(500);
   const [showResults, setShowResults] = useState(false);
   const [spyId, setSpyId] = useState("");
+  const [myId, setMyId] = useState(null);
 
   useEffect(() => {
+    socket.on("connect", () => {
+      setMyId(socket.id);
+    });
+
     socket.on("update-room", (room) => {
       setPlayers(room.players);
     });
 
     socket.on("game-started", (data) => {
       const me = data.players.find(p => p.id === socket.id);
-      setAssignedLocation(me.assignedLocation);
-      setAssignedRole(me.assignedRole);
+      if (me) {
+        setAssignedLocation(me.assignedLocation);
+        setAssignedRole(me.assignedRole);
+      }
       setSpyId(data.spyId);
       setPlayers(data.players);
       setGameStarted(true);
@@ -63,6 +70,7 @@ function App() {
     });
 
     return () => {
+      socket.off("connect");
       socket.off("update-room");
       socket.off("game-started");
       socket.off("new-message");
@@ -270,7 +278,7 @@ function App() {
       ))}
 
       <button onClick={submitLocationsAndRoles}>Gönder</button>
-      {players[0]?.id === socket.id && <button onClick={startGame}>Oyunu Başlat</button>}
+      {players[0]?.id === myId && <button onClick={startGame}>Oyunu Başlat</button>}
     </div>
   );
 }
