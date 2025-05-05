@@ -1,0 +1,13 @@
+# Genel
+node_modules/
+build/
+.env
+.DS_Store
+*.log
+
+# React
+client/node_modules/
+client/build/
+
+# VSCode
+.vscode/
