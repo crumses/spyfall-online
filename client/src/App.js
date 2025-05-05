@@ -243,6 +243,27 @@ function App() {
             </li>
           ))}
         </ul>
+<h3>Oylama Tablosu</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Oy Kullanan</th>
+      <th>Oy Verilen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {Object.entries(votes).map(([voterId, votedId]) => {
+      const voter = players.find(p => p.id === voterId);
+      const voted = players.find(p => p.id === votedId);
+      return (
+        <tr key={voterId}>
+          <td>{voter?.username || "?"}</td>
+          <td>{voted?.username || "?"}</td>
+        </tr>
+      );
+    })}
+  </tbody>
+</table>
 
         {answerTurn && <button onClick={endTurn}>Cevabı Bitir</button>}
       </div>
