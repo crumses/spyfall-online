@@ -27,6 +27,9 @@ function App() {
   const [spyId, setSpyId] = useState("");
   const [myId, setMyId] = useState(null);
 
+  const [currentAsker, setCurrentAsker] = useState("");
+  const [currentAnswerer, setCurrentAnswerer] = useState("");
+
   useEffect(() => {
     socket.on("connect", () => {
       setMyId(socket.id);
@@ -56,6 +59,11 @@ function App() {
       setAnswerTurn(answerer === socket.id);
       setTargetPlayer("");
       setTurnTimer(30);
+
+      const askerName = players.find(p => p.id === asker)?.username || "";
+      const answererName = players.find(p => p.id === answerer)?.username || "";
+      setCurrentAsker(askerName);
+      setCurrentAnswerer(answererName);
     });
 
     socket.on("votes-update", (voteData) => {
@@ -78,7 +86,7 @@ function App() {
       socket.off("votes-update");
       socket.off("game-ended");
     };
-  }, []);
+  }, [players]);
 
   useEffect(() => {
     if (gameStarted) {
@@ -195,6 +203,12 @@ function App() {
         <p><strong>Yer:</strong> {assignedLocation}</p>
         <p><strong>Rol:</strong> {assignedRole}</p>
         <p><strong>Tur Süresi:</strong> {turnTimer}s</p>
+
+        {currentAsker && currentAnswerer && (
+          <div className="question-info">
+            <p><strong>{currentAsker}</strong>, <strong>{currentAnswerer}</strong>'a soru soruyor.</p>
+          </div>
+        )}
 
         <div className="chat">
           <h3>Sohbet</h3>
