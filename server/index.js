@@ -171,7 +171,12 @@ io.on("connection", (socket) => {
     }
   });
 });
+// React frontend'i sunmak için
+app.use(express.static(path.join(__dirname, "../client/build")));
 
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+});
 // Port 3001 (Render'da PORT env değişkeni kullanılmalı)
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
