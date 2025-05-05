@@ -22,9 +22,10 @@ app.get("/api/health", (req, res) => {
 });
 
 // React uygulamasını yönlendirme
-app.get("*", (req, res) => {
+app.get("/*", (req, res) => {
   res.sendFile(path.resolve(clientBuildPath, "index.html"));
 });
+
 
 // === Socket.io ===
 
