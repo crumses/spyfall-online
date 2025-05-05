@@ -4,10 +4,14 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 
 const app = express();
+
+// CORS middleware'ini önce tanımla
+app.use(cors());
+
+// Sağlık kontrolü veya test için "/" rotası
 app.get("/", (req, res) => {
   res.send("Socket.io sunucusu çalışıyor.");
 });
-app.use(cors());
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -80,13 +84,11 @@ io.on("connection", (socket) => {
 
     io.to(roomCode).emit("game-started", room);
 
-    // İlk soru turunu başlat
     io.to(roomCode).emit("question-turn", {
       asker: room.currentAsker,
       answerer: null,
     });
 
-    // Sıra geçiş zamanlayıcısı başlat (30 sn)
     room.turnTimeout = setTimeout(() => {
       const otherPlayers = room.players.filter(p => p.id !== room.currentAsker);
       if (otherPlayers.length === 0) return;
@@ -168,6 +170,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3001, () => {
-  console.log("Sunucu 3001 portunda çalışıyor.");
+// Port 3001 (Render'da PORT env değişkeni kullanılmalı)
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`Sunucu ${PORT} portunda çalışıyor.`);
 });
