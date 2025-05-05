@@ -244,7 +244,7 @@ function App() {
           ))}
         </ul>
 <h3>Oylama Tablosu</h3>
-<table>
+<table className="vote-table">
   <thead>
     <tr>
       <th>Oy Kullanan</th>
@@ -264,6 +264,7 @@ function App() {
     })}
   </tbody>
 </table>
+
 
         {answerTurn && <button onClick={endTurn}>Cevabı Bitir</button>}
       </div>
