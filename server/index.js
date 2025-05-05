@@ -12,22 +12,16 @@ const io = new Server(server, {
 
 app.use(cors());
 
-// React build klasörünü sun
 const clientBuildPath = path.resolve(__dirname, "../client/build");
 app.use(express.static(clientBuildPath));
 
-// API sağlık kontrolü
 app.get("/api/health", (req, res) => {
   res.json({ message: "Server is healthy" });
 });
 
-// React uygulamasını yönlendirme
 app.get("/*", (req, res) => {
   res.sendFile(path.resolve(clientBuildPath, "index.html"));
 });
-
-
-// === Socket.io ===
 
 let rooms = {};
 
@@ -74,22 +68,61 @@ io.on("connection", (socket) => {
     const room = rooms[roomCode];
     if (!room) return;
 
-    const allLocations = room.players.flatMap(p => p.locations);
-    const allRoles = room.players.flatMap(p => p.roles);
-    const chosenLocation = allLocations[Math.floor(Math.random() * allLocations.length)];
-    const chosenRole = allRoles[Math.floor(Math.random() * allRoles.length)];
-    const spyIndex = Math.floor(Math.random() * room.players.length);
+    const players = room.players;
+    const playerCount = players.length;
 
-    room.players = room.players.map((player, i) => ({
-      ...player,
-      assignedLocation: i === spyIndex ? "???" : chosenLocation,
-      assignedRole: i === spyIndex ? "???" : chosenRole,
-      isSpy: i === spyIndex,
-    }));
+    if (playerCount < 3) return;
+
+    // Her oyuncunun aynı sıradaki yeri ortak olacak şekilde alınır
+    const firstPlayer = players[0];
+    const locationList = firstPlayer.locations;
+
+    if (locationList.length < 1 || firstPlayer.roles.length !== locationList.length * 5) {
+      return; // Hatalı veri
+    }
+
+    // Ortak bir yer seç
+    const chosenLocationIndex = Math.floor(Math.random() * locationList.length);
+    const chosenLocation = locationList[chosenLocationIndex];
+
+    // O yere ait roller her oyuncudan alınır
+    const rolePool = [];
+
+    for (const player of players) {
+      const start = chosenLocationIndex * 5;
+      const end = start + 5;
+      const rolesForLocation = player.roles.slice(start, end);
+      rolePool.push(...rolesForLocation);
+    }
+
+    // Rollerden eşsiz seçim yapılır
+    const shuffledRoles = [...rolePool].sort(() => Math.random() - 0.5);
+    const assignedRoles = shuffledRoles.slice(0, playerCount - 1); // Spy hariç
+
+    const spyIndex = Math.floor(Math.random() * playerCount);
+
+    let roleCounter = 0;
+    room.players = players.map((player, index) => {
+      if (index === spyIndex) {
+        return {
+          ...player,
+          assignedLocation: "???",
+          assignedRole: "Spy",
+          isSpy: true,
+        };
+      }
+      const role = assignedRoles[roleCounter++];
+      return {
+        ...player,
+        assignedLocation: chosenLocation,
+        assignedRole: role,
+        isSpy: false,
+      };
+    });
 
     room.gameStarted = true;
-    room.spyId = room.players[spyIndex].id;
-    room.currentAsker = room.players[Math.floor(Math.random() * room.players.length)].id;
+    room.spyId = players[spyIndex].id;
+    room.currentAsker = players[Math.floor(Math.random() * playerCount)].id;
     room.votes = {};
 
     io.to(roomCode).emit("game-started", room);
@@ -177,7 +210,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Port ayarı
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Sunucu ${PORT} portunda çalışıyor.`);
