@@ -238,9 +238,8 @@ function App() {
               {questionTurn && p.id !== socket.id && (
                 <button onClick={() => beginQuestion(p.id)}>Soru Sor</button>
               )}
-              {vote === "" && !questionTurn && !answerTurn && (
-                <button onClick={() => votePlayer(p.id)}>Oy Ver</button>
-              )}
+              <button onClick={() => votePlayer(p.id)}>Oy Ver</button>
+
             </li>
           ))}
         </ul>
