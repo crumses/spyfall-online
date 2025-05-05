@@ -13,19 +13,21 @@ const io = new Server(server, {
 app.use(cors());
 
 // React build klasörünü sun
-app.use(express.static(path.join(__dirname, "../client/build")));
+const clientBuildPath = path.resolve(__dirname, "../client/build");
+app.use(express.static(clientBuildPath));
 
-// API sağlık testi (opsiyonel)
+// API sağlık kontrolü
 app.get("/api/health", (req, res) => {
   res.json({ message: "Server is healthy" });
 });
 
-// Tüm bilinmeyen yollar için React index.html gönder
+// React uygulamasını yönlendirme
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+  res.sendFile(path.resolve(clientBuildPath, "index.html"));
 });
 
-// Socket.io oyun mantığı
+// === Socket.io ===
+
 let rooms = {};
 
 io.on("connection", (socket) => {
@@ -71,9 +73,8 @@ io.on("connection", (socket) => {
     const room = rooms[roomCode];
     if (!room) return;
 
-    let allLocations = room.players.flatMap(p => p.locations);
-    let allRoles = room.players.flatMap(p => p.roles);
-
+    const allLocations = room.players.flatMap(p => p.locations);
+    const allRoles = room.players.flatMap(p => p.roles);
     const chosenLocation = allLocations[Math.floor(Math.random() * allLocations.length)];
     const chosenRole = allRoles[Math.floor(Math.random() * allRoles.length)];
     const spyIndex = Math.floor(Math.random() * room.players.length);
@@ -92,25 +93,19 @@ io.on("connection", (socket) => {
 
     io.to(roomCode).emit("game-started", room);
 
-    io.to(roomCode).emit("question-turn", {
-      asker: room.currentAsker,
-      answerer: null,
-    });
-
-    room.turnTimeout = setTimeout(() => {
+    const emitTurn = () => {
       const otherPlayers = room.players.filter(p => p.id !== room.currentAsker);
       if (otherPlayers.length === 0) return;
-      const newAsker = otherPlayers[Math.floor(Math.random() * otherPlayers.length)].id;
-      room.currentAsker = newAsker;
+      room.currentAsker = otherPlayers[Math.floor(Math.random() * otherPlayers.length)].id;
       io.to(roomCode).emit("question-turn", {
         asker: room.currentAsker,
         answerer: null,
       });
-    }, 30000);
-  });
+    };
 
-  socket.on("send-message", ({ roomCode, username, message }) => {
-    io.to(roomCode).emit("new-message", { username, message });
+    emitTurn();
+
+    room.turnTimeout = setTimeout(emitTurn, 30000);
   });
 
   socket.on("ask-question", ({ roomCode, toId }) => {
@@ -140,13 +135,16 @@ io.on("connection", (socket) => {
     room.turnTimeout = setTimeout(() => {
       const otherPlayers = room.players.filter(p => p.id !== room.currentAsker);
       if (otherPlayers.length === 0) return;
-      const newAsker = otherPlayers[Math.floor(Math.random() * otherPlayers.length)].id;
-      room.currentAsker = newAsker;
+      room.currentAsker = otherPlayers[Math.floor(Math.random() * otherPlayers.length)].id;
       io.to(roomCode).emit("question-turn", {
         asker: room.currentAsker,
         answerer: null,
       });
     }, 30000);
+  });
+
+  socket.on("send-message", ({ roomCode, username, message }) => {
+    io.to(roomCode).emit("new-message", { username, message });
   });
 
   socket.on("vote", ({ roomCode, votedId }) => {
@@ -178,7 +176,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// Uygulama portu (Render gibi platformlar için process.env.PORT destekli)
+// Port ayarı
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Sunucu ${PORT} portunda çalışıyor.`);
