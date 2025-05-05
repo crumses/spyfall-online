@@ -12,20 +12,20 @@ const io = new Server(server, {
 
 app.use(cors());
 
-// 🔹 React build klasörünü sun
+// React build klasörünü sun
 app.use(express.static(path.join(__dirname, "../client/build")));
 
-// 🔸 API test endpoint (opsiyonel)
+// API sağlık testi (opsiyonel)
 app.get("/api/health", (req, res) => {
   res.json({ message: "Server is healthy" });
 });
 
-// 🔹 Tüm bilinmeyen isteklerde React index.html döndür
+// Tüm bilinmeyen yollar için React index.html gönder
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
-// 🧠 Socket.io setup
+// Socket.io oyun mantığı
 let rooms = {};
 
 io.on("connection", (socket) => {
@@ -178,7 +178,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// 🌐 PORT ayarı
+// Uygulama portu (Render gibi platformlar için process.env.PORT destekli)
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Sunucu ${PORT} portunda çalışıyor.`);
